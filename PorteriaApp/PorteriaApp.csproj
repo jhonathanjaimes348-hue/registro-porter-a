@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>PorteriaApp</RootNamespace>
+    <AssemblyName>PorteriaApp</AssemblyName>
+
+    <!--
+      Permite compilar (no ejecutar) este proyecto de Windows Forms en
+      sistemas que no son Windows (por ejemplo, Linux/macOS durante el
+      desarrollo o en CI). Para ejecutar la aplicación real se necesita
+      Windows (ver README.md).
+    -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+</Project>

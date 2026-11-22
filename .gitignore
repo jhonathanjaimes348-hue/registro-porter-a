@@ -1,0 +1,13 @@
+# Carpetas de compilación de .NET
+bin/
+obj/
+
+# Archivo de datos generado en tiempo de ejecución (persistencia)
+registros_porteria.txt
+
+# Archivos de usuario de Visual Studio
+*.user
+.vs/
+
+# Proyecto temporal usado solo para verificar la lógica en este entorno
+_VerificacionLogica/
