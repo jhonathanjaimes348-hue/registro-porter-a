@@ -34,13 +34,13 @@ que la información no se pierda al cerrar el programa.
 
 | # | Requisito | Dónde está |
 |---|-----------|------------|
-| 1 | GUI por código, 3 pestañas, tabla, eventos | `UI/MainForm.cs` — `TabControl` con 3 `TabPage` construidas 100% por código (sin diseñador), `DataGridView`, eventos `Click`/`SelectedIndexChanged`/`FormClosing` |
-| 2 | Validación con mensajes, if/switch | `ErrorProvider` + `MessageBox` en `MainForm`; decisiones con `if`/`switch` tanto en la UI (`ValidarCamposFormulario`) como en `GestorPorteria.ValidarPersona` |
-| 3 | 3+ clases con constructor, herencia + polimorfismo, UML | `Persona` (abstracta) → `Residente` / `Visitante`, cada una sobrescribe `DescripcionAcceso()`. Diagrama en la sección 5 |
-| 4 | Lógica separada de la UI | Todo en `Modelo/`, `Logica/` y `Persistencia/` — ninguna de esas clases hace `using System.Windows.Forms` |
-| 5 | Vector/lista y matriz | `List<RegistroAcceso>` en `GestorPorteria`; matriz `int[7,2]` de conteos por día de la semana x tipo de persona |
-| 6 | Informe con contadores, acumuladores, banderas | `GestorPorteria.GenerarResumen()`: contadores (`contadorEntradas`, `contadorResidentes`, ...), acumulador (`acumuladorTotal`), bandera (`hayPersonasDentro`) |
-| 7 | Persistencia en archivo de texto | `Persistencia/PersistenciaArchivo.cs`, formato delimitado por `\|` |
+| 1 | GUI por código, 3 pestañas, tabla, eventos | `UI/VentanaPrincipal.cs` — `TabControl` con 3 `TabPage` construidas 100% por código (sin diseñador), `DataGridView` (`grilla`), eventos `Click`/`SelectedIndexChanged`/`FormClosing` (prefijo `Al...`) |
+| 2 | Validación con mensajes, if/switch | La validación real vive en `Validador.Datos()` (lógica, no en la ventana); la ventana solo muestra el mensaje con `ErrorProvider` (`errores`) y las etiquetas de estado. Decisiones con `if`/`switch` en `Validador` y `RegistroAccesos.Registrar` |
+| 3 | 3+ clases con constructor, herencia + polimorfismo, UML | `Persona` (abstracta) → `Residente` / `Visitante`, cada una sobrescribe `Tipo` y `Detalle`. Diagrama en la sección 5 |
+| 4 | Lógica separada de la UI | Todo en `Modelo/` y `Logica/` — ninguna de esas clases hace `using System.Windows.Forms` |
+| 5 | Vector/lista y matriz | `BindingList<RegistroAcceso>` en `RegistroAccesos` (se enlaza directo a la grilla); matriz `int[7,2]` de conteos por día de la semana x tipo de persona |
+| 6 | Informe con contadores, acumuladores, banderas | `RegistroAccesos.Informe()`: contadores (`entradas`, `residentes`, ...), acumulador (`total`), bandera (`hayGenteAdentro`) |
+| 7 | Persistencia en archivo de texto | `Logica/Archivo.cs` + `RegistroAcceso.ToLinea()/DesdeLinea()`, formato delimitado por `;`. Se guarda al cerrar y se carga al abrir (`registros_porteria.txt`), y también hay diálogos `Guardar como.../Abrir archivo...` |
 | 8 | Repositorio GitHub con commits de ambos integrantes | Ver sección 6 |
 
 ## 4. Estructura del proyecto
@@ -56,16 +56,14 @@ RegistroPorteria/
     │   ├── Persona.cs                 # Clase abstracta base
     │   ├── Residente.cs               # Hereda de Persona
     │   ├── Visitante.cs               # Hereda de Persona
-    │   ├── RegistroAcceso.cs          # Un movimiento (entrada/salida)
+    │   ├── RegistroAcceso.cs          # Un movimiento; ToLinea()/DesdeLinea()
     │   └── TipoMovimiento.cs          # enum Entrada/Salida
     ├── Logica/                        # Lógica de negocio (sin Forms)
-    │   ├── GestorPorteria.cs          # Lista, matriz, validaciones, informe
-    │   ├── ResultadoOperacion.cs      # Resultado de una operación
-    │   └── ResumenReporte.cs          # Datos del informe final
-    ├── Persistencia/
-    │   └── PersistenciaArchivo.cs     # Guardar/cargar en archivo de texto
+    │   ├── RegistroAccesos.cs         # BindingList, matriz, Registrar(), Informe()
+    │   ├── Validador.cs               # Validación de datos (estático)
+    │   └── Archivo.cs                 # Guardar/cargar en archivo de texto (estático)
     └── UI/
-        └── MainForm.cs                # Única clase que usa Windows Forms
+        └── VentanaPrincipal.cs        # Única clase que usa Windows Forms
 ```
 
 ## 5. Diagrama UML de clases
@@ -76,20 +74,22 @@ classDiagram
         <<abstract>>
         +string Nombre
         +string Documento
-        +string TipoPersona*
+        +string Tipo*
+        +string Detalle*
         #Persona(nombre, documento)
-        +DescripcionAcceso() string*
     }
     class Residente {
         +string Apartamento
         +Residente(nombre, documento, apartamento)
-        +DescripcionAcceso() string
+        +Tipo string
+        +Detalle string
     }
     class Visitante {
         +string ApartamentoDestino
         +string AutorizadoPor
         +Visitante(nombre, documento, apartamentoDestino, autorizadoPor)
-        +DescripcionAcceso() string
+        +Tipo string
+        +Detalle string
     }
     class TipoMovimiento {
         <<enumeration>>
@@ -103,51 +103,40 @@ classDiagram
         +DateTime FechaHora
         +string Observaciones
         +RegistroAcceso(id, persona, movimiento, fechaHora, observaciones)
-        +DescripcionCompleta() string
+        +ToLinea() string
+        +DesdeLinea(linea)$ RegistroAcceso
     }
-    class GestorPorteria {
-        -List~RegistroAcceso~ _registros
-        -int[,] _matrizConteo
-        -int _registrosRechazados
-        +RegistrarMovimiento(persona, movimiento, fechaHora, observaciones) ResultadoOperacion
+    class RegistroAccesos {
+        -BindingList~RegistroAcceso~ registros
+        -int[,] matriz
+        -int rechazados
+        +Registrar(persona, movimiento, fecha, observaciones) string
         +EstaDentro(documento) bool
-        +GenerarResumen() ResumenReporte
-        +CargarDesde(registrosCargados)
+        +Reemplazar(nuevos)
+        +Informe() string
     }
-    class ResultadoOperacion {
-        +bool Exitoso
-        +string Mensaje
-        +ResultadoOperacion(exitoso, mensaje)
+    class Validador {
+        <<static>>
+        +Datos(persona)$ string
     }
-    class ResumenReporte {
-        +int TotalRegistros
-        +int TotalEntradas
-        +int TotalSalidas
-        +int[,] MatrizConteo
-        +bool HayPersonasDentro
-        +ComoTexto() string
+    class Archivo {
+        <<static>>
+        +Guardar(registros, ruta)$
+        +Cargar(ruta)$ List~RegistroAcceso~
     }
-    class PersistenciaArchivo {
-        -string _rutaArchivo
-        +PersistenciaArchivo(rutaArchivo)
-        +Guardar(registros)
-        +Cargar() List~RegistroAcceso~
-    }
-    class MainForm {
-        -GestorPorteria _gestor
-        +MainForm()
+    class VentanaPrincipal {
+        -RegistroAccesos accesos
+        +VentanaPrincipal()
     }
 
     Persona <|-- Residente
     Persona <|-- Visitante
     RegistroAcceso --> Persona : compone
     RegistroAcceso --> TipoMovimiento
-    GestorPorteria "1" --> "*" RegistroAcceso : administra
-    GestorPorteria --> ResultadoOperacion : retorna
-    GestorPorteria --> ResumenReporte : genera
-    PersistenciaArchivo --> RegistroAcceso : guarda/carga
-    MainForm --> GestorPorteria : usa
-    MainForm --> PersistenciaArchivo : usa
+    RegistroAccesos "1" --> "*" RegistroAcceso : administra
+    RegistroAccesos --> Validador : usa
+    VentanaPrincipal --> RegistroAccesos : usa
+    VentanaPrincipal --> Archivo : usa
 ```
 
 > GitHub renderiza este diagrama automáticamente al ver el README en el

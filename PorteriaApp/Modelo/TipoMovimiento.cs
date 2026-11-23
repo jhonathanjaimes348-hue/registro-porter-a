@@ -1,11 +1,7 @@
-namespace PorteriaApp.Modelo
+namespace PorteriaApp.Modelo;
+
+public enum TipoMovimiento
 {
-    /// <summary>
-    /// Tipo de movimiento que se registra en la portería.
-    /// </summary>
-    public enum TipoMovimiento
-    {
-        Entrada,
-        Salida
-    }
+    Entrada,
+    Salida
 }
