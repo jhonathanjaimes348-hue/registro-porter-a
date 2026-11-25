@@ -171,3 +171,11 @@ o se cierra el programa).
 
 - Integrante 1: _(completar)_
 - Integrante 2: _(completar)_
+
+## Organización del proyecto
+
+- **Modelo:** representa las personas y los registros de acceso.
+- **Lógica:** administra los registros y valida las operaciones.
+- **Interfaz:** permite al portero interactuar con el sistema mediante ventanas, botones y tablas.
+
+Esta organización facilita el mantenimiento y la comprensión del código.
